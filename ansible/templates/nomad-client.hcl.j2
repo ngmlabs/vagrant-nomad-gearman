@@ -1,0 +1,25 @@
+data_dir = "/opt/nomad/data"
+
+bind_addr = "0.0.0.0"
+
+client {
+  enabled = true
+
+  network_interface = "eth1"
+
+  meta {
+    "node_type" = "{{ nomad_node_type }}"
+  }
+}
+
+advertise {
+  http = "{{ ansible_eth1.ipv4.address }}"
+  rpc  = "{{ ansible_eth1.ipv4.address }}"
+  serf = "{{ ansible_eth1.ipv4.address }}"
+}
+
+plugin "raw_exec" {
+  config {
+    enabled = true
+  }
+}
