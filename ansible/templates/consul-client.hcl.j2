@@ -1,0 +1,12 @@
+datacenter = "test"
+
+data_dir = "/opt/consul"
+
+client_addr = "0.0.0.0"
+advertise_addr = "{{ ansible_eth1.ipv4.address }}"
+
+ui = true
+
+server = false
+
+retry_join = ["{{ groups['servers'] | map('extract', hostvars, ['ansible_eth1', 'ipv4', 'address']) | join('", "') }}"]

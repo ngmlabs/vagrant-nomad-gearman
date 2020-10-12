@@ -1,0 +1,60 @@
+---
+- hosts: all
+  become: yes
+
+  tasks:
+  - name: Disable SELinux
+    selinux: state=disabled
+
+  - name: Add HashiCorp yum repo
+    yum_repository:
+      name: hashicorp
+      description: "Hashicorp Stable - $basearch"
+      baseurl: "https://rpm.releases.hashicorp.com/RHEL/$releasever/$basearch/stable"
+      gpgkey: "https://rpm.releases.hashicorp.com/gpg"
+      gpgcheck: yes
+      enabled: yes
+
+  - name: Install packages
+    yum:
+      name:
+        - consul
+        - nomad
+      state: latest
+
+  - name: Install docker
+    include_tasks: "docker.yml"
+    when: role == "client"
+
+  - name: Configure consul
+    template: src="consul-{{ role }}.hcl.j2" dest="/etc/consul.d/consul.hcl"
+    notify: "reload consul"
+
+  - name: Configure nomad
+    template: src="nomad-{{ role }}.hcl.j2" dest="/etc/nomad.d/nomad.hcl"
+    notify: "restart nomad"
+
+  - name: Flush handlers
+    meta: flush_handlers
+
+  - name: Ensure services are enabled and running
+    systemd: name="{{ item }}" enabled=yes state=started
+    with_items:
+      - consul
+      - nomad
+
+  - name: Servers list
+    debug: msg="{{ groups['servers'] | map('extract', hostvars, ['ansible_eth1', 'ipv4', 'address']) }}"
+    run_once: yes
+
+
+  handlers:
+  - name: reload consul
+    systemd:
+      name: "consul"
+      state: reloaded
+
+  - name: restart nomad
+    systemd:
+      name: "nomad"
+      state: restarted
