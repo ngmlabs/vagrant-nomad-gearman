@@ -1,0 +1,40 @@
+job "test-worker" {
+  datacenters = ["dc1"]
+
+  type = "service"
+
+  constraint {
+    attribute = "${meta.node_type}"
+    set_contains = "worker"
+  }
+
+  group "test-worker" {
+    count = 1
+
+    task "worker" {
+      driver = "raw_exec"
+
+      config {
+        command = "/usr/bin/bash"
+        args    = ["-c", "env; sleep 600"]
+      }
+
+      resources {
+        cpu    = 100
+        memory = 64
+      }
+
+      template {
+        data = <<EOF
+LOG_LEVEL="{{key "test"}}"
+GEARMAN_SERVERS="{{ range service "gearmand" }}{{ .Address }}:{{ .Port }},{{ end }}"
+EOF
+
+        destination = "secrets/file.env"
+        env         = true
+        change_mode = "restart"
+      }
+
+    }
+  }
+}
