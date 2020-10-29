@@ -14,9 +14,11 @@ job "test-worker" {
     task "worker" {
       driver = "raw_exec"
 
+      user = "nobody"
+
       config {
         command = "/usr/bin/bash"
-        args    = ["-c", "env; sleep 600"]
+        args    = ["-c", "whoami; env; sleep 600"]
       }
 
       resources {
