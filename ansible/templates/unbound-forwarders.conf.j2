@@ -1,0 +1,5 @@
+forward-zone:
+  name: "."
+{% for forwarder in nameservers.stdout_lines %}
+  forward-addr: {{ forwarder }}
+{% endfor %}

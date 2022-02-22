@@ -20,6 +20,7 @@
       name:
         - consul
         - nomad
+        - unbound
       state: latest
 
   - name: Install docker
@@ -34,6 +35,25 @@
     template: src="nomad-{{ role }}.hcl.j2" dest="/etc/nomad.d/nomad.hcl"
     notify: "restart nomad"
 
+
+  - name: Configure consul forwarding in unbound
+    template: src="unbound-consul.conf.j2" dest="/etc/unbound/conf.d/consul.conf"
+    notify: "restart unbound"
+
+  # the following 2 tasks will move all nameservers besides 127.0.0.1 to unbound config
+  - name: Get nameservers in resolv.conf
+    shell: grep ^nameserver /etc/resolv.conf | awk '{print $2}' | uniq | grep -v 127.0.0.1 || true
+    register: nameservers
+
+  - name: Configure forwarders in unbound
+    template: src="unbound-forwarders.conf.j2" dest="/etc/unbound/conf.d/forwarders.conf"
+    when: nameservers.stdout_lines | length
+    notify: "restart unbound"
+
+  - name: Send DNS requests to local unbound
+    copy: dest="/etc/resolv.conf" content="nameserver 127.0.0.1\n"
+
+
   - name: Flush handlers
     meta: flush_handlers
 
@@ -42,6 +62,7 @@
     with_items:
       - consul
       - nomad
+      - unbound
 
   - name: Servers list
     debug: msg="{{ groups['servers'] | map('extract', hostvars, ['ansible_eth1', 'ipv4', 'address']) }}"
@@ -57,4 +78,9 @@
   - name: restart nomad
     systemd:
       name: "nomad"
+      state: restarted
+
+  - name: restart unbound
+    systemd:
+      name: "unbound"
       state: restarted
