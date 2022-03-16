@@ -17,3 +17,10 @@
 
 - name: Ensure Docker service is enabled and running
   systemd: name="docker" enabled=yes state=started
+
+- name: Create docker dir
+  shell: "mkdir -p /root/.docker/"
+    
+- name: Configure auth docker
+  template: src="docker-auth.json.j2" dest="/root/.docker/config.json"
+  notify: "restart nomad"

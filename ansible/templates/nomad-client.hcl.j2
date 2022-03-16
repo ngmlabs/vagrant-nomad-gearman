@@ -1,3 +1,4 @@
+datacenter = "dc1"
 data_dir = "/opt/nomad/data"
 
 bind_addr = "0.0.0.0"
@@ -22,4 +23,16 @@ plugin "raw_exec" {
   config {
     enabled = true
   }
+}
+
+plugin "docker" {
+  config {
+    volumes {
+      enabled  = true
+      }
+    auth  {
+      config = "/root/.docker/config.json"
+      }
+    allow_privileged = true
+   }
 }
